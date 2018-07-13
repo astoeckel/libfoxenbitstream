@@ -27,7 +27,7 @@ lib_foxenbitstream = library(
 # Install the header file
 install_headers('foxen/bitstream.h', subdir: 'foxen')
 
-# Build the unit test
+# Build and register the unit test
 dep_foxenunit = dependency(
     'libfoxenunit',
     fallback:['libfoxenunit', 'dep_foxenunit'])
@@ -37,6 +37,7 @@ exe_test_bitstream = executable(
     include_directories: inc_foxen,
     link_with: lib_foxenbitstream,
     dependencies: dep_foxenunit)
+test('test_bitstream', exe_test_bitstream)
 
 # Generate a Pkg config file
 pkg = import('pkgconfig')

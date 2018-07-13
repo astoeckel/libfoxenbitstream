@@ -4,6 +4,8 @@
 
 This library provides a tiny, totally non-versatile bitstream reader that is on the verge of being reasonably fast. Allows to read a series of 1-57 bits of data as unsigned integers in MSB order (most significant bit first) from a byte stream.
 
+This is quite useful when decoding compressed data, multimedia formats, or reading data from a physical link.
+
 ## Usage
 
 ```C
@@ -23,6 +25,11 @@ EXPECT_EQ(0, fx_bitstream_read_msb(&bitstream, 2));  /* C */
 ```
 
 See `foxen/bitstream.h` for the complete documentation.
+
+## Acknowledgements
+
+This code is heavily inspired by Fabian “ryg” Giesen's excellent series of blog
+posts “[Reading bits in far too many ways](https://fgiesen.wordpress.com/2018/02/19/reading-bits-in-far-too-many-ways-part-1/)”. Before reading this all my bitstream readers were incredibly clumsy. See [here](https://github.com/astoeckel/aequipedis/blob/4c148ca45f5253651daff3ef21b68dae0888e345/aequipedis.js#L45) for an example of how *not* to implement a bitstream reader.
 
 ## FAQ about the *Foxen* series of C libraries
 

@@ -160,4 +160,26 @@ static inline int64_t fx_bitstream_try_read_msb(fx_bitstream_t *reader,
 	           : -1;
 }
 
+/**
+ * Combination of fx_bitstream_can_read and fx_bitstream_peek. Returns a
+ * negative value if the desired number of bits cannot be read from the source.
+ * If the given number of threads are available, returns the desired integer.
+ * In contrast to fx_bitstream_try_read_msb() this function does not advance
+ * the actual reader pointer.
+ *
+ * @param reads is the bitstream reader instance from which the data should be
+ * read.
+ * @param n_bits is the number of bits that should be read. Must be in
+ * 1 <= n_bits <= 57.
+ * @return -1 if the desired number of bits is not available in the bitstream.
+ * Otherwise the integer corresponding to the specified number of bits is
+ * returned.
+ */
+static inline int64_t fx_bitstream_try_peek_msb(fx_bitstream_t *reader,
+                                                uint8_t n_bits) {
+	return fx_bitstream_can_read(reader, n_bits)
+	           ? (int64_t)fx_bitstream_peek_msb(reader, n_bits)
+	           : -1;
+}
+
 #endif /* FOXEN_COMMON_BITSTREAM_H */

@@ -27,9 +27,9 @@
 #define BUFSIZE (sizeof(((fx_bitstream_t *)NULL)->buf) * 8U)
 
 static inline void _fx_bitstream_fill_buf(fx_bitstream_t *reader) {
-	while (reader->pos >= 8 && reader->src != reader->src_end) {
+	while (reader->pos >= 8U && reader->src != reader->src_end) {
 		reader->buf = (reader->buf << 8U) | *(reader->src++);
-		reader->pos -= 8;
+		reader->pos -= 8U;
 	}
 }
 
@@ -45,7 +45,7 @@ void fx_bitstream_set_source(fx_bitstream_t *reader, const uint8_t *src,
 }
 
 uint64_t fx_bitstream_read_msb(fx_bitstream_t *reader, uint8_t n_bits) {
-	assert((n_bits >= 1) && (n_bits <= (BUFSIZE - 7)));
+	assert((n_bits >= 1U) && (n_bits <= (BUFSIZE - 7U)));
 
 	/* Copy the current buffer content, skip already read bits */
 	uint64_t bits = reader->buf << reader->pos;
@@ -59,7 +59,7 @@ uint64_t fx_bitstream_read_msb(fx_bitstream_t *reader, uint8_t n_bits) {
 }
 
 uint64_t fx_bitstream_peek_msb(fx_bitstream_t *reader, uint8_t n_bits) {
-	assert((n_bits >= 1) && (n_bits <= (BUFSIZE - 7)));
+	assert((n_bits >= 1U) && (n_bits <= (BUFSIZE - 7U)));
 	return (reader->buf << reader->pos) >> (BUFSIZE - n_bits);
 }
 

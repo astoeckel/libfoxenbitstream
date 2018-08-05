@@ -23,6 +23,11 @@
  * Unit tests                                                                 *
  ******************************************************************************/
 
+static void ex_callback_set_value(uint8_t byte, void *x) {
+	int *value = (int *)x;
+	*value = byte;
+}
+
 #define INIT_BITSTREAM(...)                                \
 	const uint8_t buf[] = {__VA_ARGS__};                   \
 	fx_bitstream_t reader;                                 \
@@ -39,6 +44,14 @@
 	EXPECT_TRUE(fx_bitstream_can_read(&reader, n_bits));       \
 	EXPECT_EQ(expect, fx_bitstream_peek_msb(&reader, n_bits)); \
 	EXPECT_EQ(expect, fx_bitstream_read_msb(&reader, n_bits));
+
+#define TEST_READ_EX(expect, n_bits, expect_byte)                            \
+	EXPECT_TRUE(fx_bitstream_can_read(&reader, n_bits));                     \
+	EXPECT_EQ(expect, fx_bitstream_peek_msb(&reader, n_bits));               \
+	_value = -1;                                                             \
+	EXPECT_EQ(expect, fx_bitstream_read_msb_ex(                              \
+	                      &reader, n_bits, ex_callback_set_value, &_value)); \
+	EXPECT_EQ(expect_byte, _value);
 
 void test_read_bits_msb_bytes() {
 	INIT_BITSTREAM(0x01U, 0x23U, 0x45U);
@@ -132,6 +145,48 @@ void test_read_bits_three() {
 	EXPECT_TRUE(fx_bitstream_at_source_end(&reader));
 }
 
+void test_read_bits_three_ex() {
+	int _value;
+	INIT_BITSTREAM(0x01U, 0x23U, 0x45U, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x00,
+	               0x11, 0x22, 0x33);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x2U, 3, 0x01);
+	TEST_READ_EX(0x2U, 3, -1);
+	TEST_READ_EX(0x1U, 3, -1);
+	TEST_READ_EX(0x5U, 3, 0x23);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x5U, 3, 0x45);
+	TEST_READ_EX(0x3U, 3, -1);
+	TEST_READ_EX(0x1U, 3, -1);
+	TEST_READ_EX(0x7U, 3, 0x67);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x4U, 3, -1);
+	TEST_READ_EX(0x6U, 3, 0x89);
+	TEST_READ_EX(0x5U, 3, -1);
+	TEST_READ_EX(0x3U, 3, 0xAB);
+	TEST_READ_EX(0x6U, 3, -1);
+	TEST_READ_EX(0x3U, 3, -1);
+	TEST_READ_EX(0x3U, 3, 0xCD);
+	TEST_READ_EX(0x6U, 3, -1);
+	TEST_READ_EX(0x7U, 3, -1);
+	TEST_READ_EX(0x4U, 3, 0xEF);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x0U, 3, 0x00);
+	TEST_READ_EX(0x0U, 3, -1);
+	TEST_READ_EX(0x4U, 3, -1);
+	TEST_READ_EX(0x2U, 3, 0x11);
+	TEST_READ_EX(0x2U, 3, -1);
+	TEST_READ_EX(0x1U, 3, -1);
+	TEST_READ_EX(0x0U, 3, 0x22);
+	TEST_READ_EX(0x6U, 3, -1);
+	EXPECT_FALSE(fx_bitstream_can_read(&reader, 4));
+	EXPECT_TRUE(fx_bitstream_can_read(&reader, 3));
+	TEST_READ_EX(0x3U, 3, 0x33);
+	EXPECT_FALSE(fx_bitstream_can_read(&reader, 1));
+	EXPECT_TRUE(fx_bitstream_at_source_end(&reader));
+}
+
 void test_example_code() {
 	fx_bitstream_t bitstream;
 	fx_bitstream_init(&bitstream);
@@ -156,6 +211,7 @@ int main() {
 	RUN(test_read_bits_msb_nibbles);
 	RUN(test_read_bits_msb_32_nibbles);
 	RUN(test_read_bits_three);
+	RUN(test_read_bits_three_ex);
 	RUN(test_read_bits_flac_sync1);
 	RUN(test_read_bits_flac_sync2);
 	RUN(test_example_code);

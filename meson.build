@@ -19,13 +19,6 @@ project('libfoxenbitstream', 'c', default_options : ['c_std=c99'])
 # Include directory
 inc_foxen = include_directories('.')
 
-# Define the contents of the actual library
-lib_foxenbitstream = library(
-    'foxenbitstream',
-    'foxen/bitstream.c',
-    include_directories: inc_foxen,
-    install: true)
-
 # Build and register the unit test
 dep_foxenunit = dependency(
     'libfoxenunit',
@@ -34,7 +27,6 @@ exe_test_bitstream = executable(
     'test_bitstream',
     'test/test_bitstream.c',
     include_directories: inc_foxen,
-    link_with: lib_foxenbitstream,
     dependencies: dep_foxenunit,
     install: false)
 test('test_bitstream', exe_test_bitstream)
@@ -47,7 +39,7 @@ install_headers(
 # Generate a Pkg config file
 pkg = import('pkgconfig')
 pkg.generate(
-    libraries: [lib_foxenbitstream],
+    libraries: [],
     subdirs: [],
     name: 'libfoxenbitstream',
     version: '1.0',
@@ -56,6 +48,5 @@ pkg.generate(
 
 # Export the dependency
 dep_foxenbitstream = declare_dependency(
-    link_with: lib_foxenbitstream,
     include_directories: inc_foxen)
 

@@ -33,6 +33,36 @@ static inline void _fx_bitstream_fill_buf(fx_bitstream_t *reader) {
 	}
 }
 
+static inline uint64_t _fx_bitstream_read_msb(
+    fx_bitstream_t *reader, uint8_t n_bits,
+    fx_bitstream_byte_callback_t callback, void *callback_data) {
+	assert((n_bits >= 1U) && (n_bits <= (BUFSIZE - 7U)));
+
+	/* Copy the current buffer content, skip already read bits */
+	uint64_t bits = reader->buf << reader->pos;
+
+	/* Advance the position */
+	const uint8_t pos_new = reader->pos + n_bits;
+
+	/* If the callback is specified, issue entire bytes that were read */
+	if (callback) {
+		const uint8_t i0 = reader->pos / 8U, i1 = pos_new / 8U;
+		uint64_t buf = reader->buf << (i0 * 8U);
+		for (uint8_t i = i0; i < i1; i++) {
+			uint8_t byte = buf >> (BUFSIZE - 8U);
+			callback(byte, callback_data);
+			buf = buf << 8U;
+		}
+	}
+	reader->pos = pos_new;
+
+	/* Read new bytes from the byte stream */
+	_fx_bitstream_fill_buf(reader);
+
+	/* Mask out the "low" bits */
+	return bits >> (BUFSIZE - n_bits);
+}
+
 /******************************************************************************
  * PUBLIC C API                                                               *
  ******************************************************************************/
@@ -45,17 +75,13 @@ void fx_bitstream_set_source(fx_bitstream_t *reader, const uint8_t *src,
 }
 
 uint64_t fx_bitstream_read_msb(fx_bitstream_t *reader, uint8_t n_bits) {
-	assert((n_bits >= 1U) && (n_bits <= (BUFSIZE - 7U)));
+	return _fx_bitstream_read_msb(reader, n_bits, NULL, NULL);
+}
 
-	/* Copy the current buffer content, skip already read bits */
-	uint64_t bits = reader->buf << reader->pos;
-
-	/* Advance the position, read new bytes from the source byte stream */
-	reader->pos += n_bits;
-	_fx_bitstream_fill_buf(reader);
-
-	/* Mask out the "low" bits */
-	return bits >> (BUFSIZE - n_bits);
+uint64_t fx_bitstream_read_msb_ex(fx_bitstream_t *reader, uint8_t n_bits,
+                                  fx_bitstream_byte_callback_t callback,
+                                  void *callback_data) {
+	return _fx_bitstream_read_msb(reader, n_bits, callback, callback_data);
 }
 
 uint64_t fx_bitstream_peek_msb(fx_bitstream_t *reader, uint8_t n_bits) {

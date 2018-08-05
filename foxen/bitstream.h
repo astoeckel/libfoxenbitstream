@@ -53,7 +53,8 @@ struct fx_bitstream {
 	uint8_t const *src_end;
 
 	/**
-	 * Position within the source byte stream in bits.
+	 * Position within the source byte stream in bits, i.e. the number of bits
+	 * that have been consumed.
 	 */
 	uint8_t pos;
 };
@@ -64,10 +65,18 @@ struct fx_bitstream {
 typedef struct fx_bitstream fx_bitstream_t;
 
 /**
- * Initializes the bitstream reader instance. Call fx_bitstream_set_source() to
- * set the byte buffer from which the bitstream reader should read its data.
+ * Callback called whenever a fully byte has been consumed. This is useful for
+ * CRC calculations.
+ */
+typedef void (*fx_bitstream_byte_callback_t)(uint8_t byte, void *data);
+
+/**
+ * Initializes the bitstream reader instance. Call fx_bitstream_set_source()
+ * to set the byte buffer from which the bitstream reader should read its
+ * data.
  *
- * @param reader is the bitstream reader instance that should be initialized.
+ * @param reader is the bitstream reader instance that should be
+ * initialized.
  */
 static inline void fx_bitstream_init(fx_bitstream_t *reader) {
 	reader->buf = 0U;
@@ -127,6 +136,24 @@ static inline bool fx_bitstream_can_read(fx_bitstream_t *reader,
 uint64_t fx_bitstream_read_msb(fx_bitstream_t *reader, uint8_t n_bits);
 
 /**
+ * Reads up to 64 bits from the input buffer in MSB order. Note that this
+ * function does not check whether the read operation returns valid data, so
+ * make sure to call fx_bitstream_can_read() before reading.
+ *
+ * @param reader is the bitstream reader instance from which the data should be
+ * read.
+ * @param n_bits is the number of bits that should be read. Must be in
+ * 1 <= n_bits <= 57.
+ * @param callback is called whenever a full byte is consumed. Note that this
+ * includes a "virtual" set of zeros at the beginning of the bitstream.
+ * @param callback_data is a user-defined pointer passed to the byte callback.
+ * @return an integer corresponding the the specified number of bits.
+ */
+uint64_t fx_bitstream_read_msb_ex(fx_bitstream_t *reader, uint8_t n_bits,
+                                  fx_bitstream_byte_callback_t callback,
+                                  void *callback_data);
+
+/**
  * Reads up to 64 bits from the input buffer in MSB order without advancing the
  * buffer location. Note that this function does not check whether the read
  * operation returns valid data, so make sure to call fx_bitstream_can_read()
@@ -157,6 +184,31 @@ static inline int64_t fx_bitstream_try_read_msb(fx_bitstream_t *reader,
                                                 uint8_t n_bits) {
 	return fx_bitstream_can_read(reader, n_bits)
 	           ? (int64_t)fx_bitstream_read_msb(reader, n_bits)
+	           : -1;
+}
+
+/**
+ * Combination of fx_bitstream_can_read and fx_bitstream_read_msb. Returns a
+ * negative value if the desired number of bits cannot be read from the source.
+ * If the given number of threads are available, returns the desired integer.
+ *
+ * @param reads is the bitstream reader instance from which the data should be
+ * read.
+ * @param n_bits is the number of bits that should be read. Must be in
+ * 1 <= n_bits <= 57.
+ * @param callback is called whenever a full byte is consumed. Note that this
+ * includes a "virtual" set of zeros at the beginning of the bitstream.
+ * @param callback_data is a user-defined pointer passed to the byte callback.
+ * @return -1 if the desired number of bits is not available in the bitstream.
+ * Otherwise the integer corresponding to the specified number of bits is
+ * returned.
+ */
+static inline int64_t fx_bitstream_try_read_msb_ex(
+    fx_bitstream_t *reader, uint8_t n_bits,
+    fx_bitstream_byte_callback_t callback, void *callback_data) {
+	return fx_bitstream_can_read(reader, n_bits)
+	           ? (int64_t)fx_bitstream_read_msb_ex(reader, n_bits, callback,
+	                                               callback_data)
 	           : -1;
 }
 
